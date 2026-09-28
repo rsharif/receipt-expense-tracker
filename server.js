@@ -120,6 +120,7 @@ async function connectDb() {
     log("ATLAS", "db", { status: "disabled", reason: "MONGO_URI is not set (receipts will not persist)" });
     return;
   }
+  log("ATLAS", "db_connect", { host: endpointHost(MONGO_URI), uri_chars: MONGO_URI.length });
   try {
     const client = new MongoClient(MONGO_URI);
     await client.connect();
