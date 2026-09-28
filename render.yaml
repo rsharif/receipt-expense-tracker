@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: receipt-expense-tracker
+    runtime: node
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: LLM_BASE_URL
+        value: https://ollama.com/v1/chat/completions
+      - key: LLM_MODEL
+        value: gemma4:31b
+      - key: LLM_API_KEY
+        sync: false
+      - key: MONGO_URI
+        sync: false

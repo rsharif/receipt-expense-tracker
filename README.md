@@ -12,11 +12,35 @@ You need **Node 18+** (`node --version`). One-time setup:
 ```
 cd receipt-expense-tracker
 npm install
+npm test
 cp .env.example .env
-# edit .env: paste your LLM_API_KEY from Meta's Llama developer portal
+# edit .env: paste LLM_API_KEY and MONGO_URI (see below)
 npm start
 # open http://localhost:8000 in a browser
 ```
+
+## Database (MongoDB Atlas, free)
+
+1. Create a free **M0** cluster at MongoDB Atlas, add a database user, and
+   allow network access from `0.0.0.0/0` (needed for hosted backends).
+2. Connect → Drivers → Node.js → copy the `mongodb+srv://…` connection
+   string into `.env` as `MONGO_URI`.
+3. Restart the server (`db connected` in the log confirms it).
+
+Every valid parse is stored in the `receipts` collection as
+`{merchant, receiptDate, createdAt, items: [{label, price}], total, sourceFile}`.
+Without `MONGO_URI`, parsing still works but nothing persists and the
+history/Ask features report "database not configured".
+
+## Ask tab (plain-language questions)
+
+The Ask tab posts to `POST /api/ask`. The backend sends your question plus
+the collection schema to the vision model with a single `query_receipts`
+tool; the model replies with a MongoDB aggregation pipeline, the backend
+validates it (read-only stages `$match/$unwind/$group/$sort/$limit/$project`
+on `receipts` only, 50-row cap) and executes it, then the model phrases the
+rows into a one-sentence answer. The model never sees credentials and cannot
+write — a hostile prompt dies at the allowlist.
 
 Uploading a photo calls `POST /api/parse`: the backend sends it to
 `Llama-4-Maverick-17B-128E-Instruct-FP8` via Meta's Llama API
@@ -63,10 +87,10 @@ hosting still works, but you lose AI parsing). Easiest options:
 3. **Fly.io** — `fly launch`, set secrets with `fly secrets set HF_TOKEN=…`.
 4. **Any VPS** (Hetzner, DigitalOcean…) — clone, `npm install`, run with `pm2` or systemd; put Caddy/Nginx in front for HTTPS.
 
-Set `LLM_API_KEY` (and optionally `LLM_BASE_URL`, `LLM_MODEL`, `PORT`) in
-the host's environment variables — never commit `.env`. Custom domain: add
-it in the host's dashboard and point DNS as instructed; HTTPS is automatic
-on 1–3.
+Set `LLM_API_KEY` and `MONGO_URI` (and optionally `LLM_BASE_URL`,
+`LLM_MODEL`, `PORT`) in the host's environment variables — never commit
+`.env`. Custom domain: add it in the host's dashboard and point DNS as
+instructed; HTTPS is automatic on 1–3.
 
 ## Monitor usage
 
@@ -85,9 +109,11 @@ Suggested custom events to track: `receipt_valid`, `receipt_invalid`, `csv_expor
 index.html   — page + upload UI + expenses table
 styles.css   — styling (system fonts, solid colors, reduced-motion aware)
 app.js       — upload → POST /api/parse, expenses table/sum/CSV/localStorage
-server.js    — Node backend: static hosting + POST /api/parse (configurable vision model) + GET /api/health
-package.json — deps (express, multer, dotenv), `npm start`
-.env.example — copy to .env, add LLM_API_KEY (Meta/HF/Ollama profiles inside)
+server.js    — Node backend: static hosting, POST /api/parse, GET /api/receipts,
+               DELETE /api/receipts/:id, POST /api/ask, GET /api/health
+package.json — deps (express, multer, dotenv, mongodb), `npm start`, `npm test`
+test/        — committed backend tests (pipeline allowlist, dates, coercion)
+.env.example — copy to .env, add LLM_API_KEY (+ MONGO_URI for persistence/Ask)
 ```
 
 Data persists in `localStorage` (`receipts-v1`); Clear all wipes it.

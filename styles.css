@@ -61,6 +61,22 @@ th { font-size: 13px; color: var(--muted); font-weight: 600; }
 tfoot td { border-bottom: 0; border-top: 2px solid var(--ink); }
 .total-row td { font-weight: 600; background: var(--panel); }
 
+.tabs { display: flex; gap: 8px; margin-bottom: 18px; }
+.tab {
+  background: #fff; color: var(--ink); border: 1px solid var(--line);
+  border-radius: var(--radius); padding: 9px 20px; font-size: 15px; cursor: pointer;
+}
+.tab.active { background: #123f3c; border-color: #123f3c; color: #fff; }
+.answer {
+  margin-top: 12px; padding: 14px; background: var(--panel);
+  border-radius: var(--radius); min-height: 3em; white-space: pre-wrap;
+}
+.answer:empty { display: none; }
+textarea {
+  width: 100%; font-family: inherit; font-size: 15px;
+  border: 1px solid var(--line); border-radius: var(--radius); padding: 10px;
+}
+
 .badge {
   display: inline-block; font-size: 13px; font-weight: 600;
   padding: 2px 10px; border-radius: 999px;

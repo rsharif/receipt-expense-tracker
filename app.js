@@ -167,6 +167,9 @@
   expBody.addEventListener("click", function (e) {
     var id = e.target && e.target.getAttribute && e.target.getAttribute("data-id");
     if (!id) return;
+    if (typeof fetch !== "undefined") {
+      fetch("api/receipts/" + encodeURIComponent(id), { method: "DELETE" }).catch(function () {});
+    }
     state.items = state.items.filter(function (it) { return it.id !== id; });
     persist(); render();
   });
@@ -198,6 +201,61 @@
     setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 500);
   });
 
+  /* ---------- history + tabs + ask ---------- */
+  function loadHistory() {
+    if (typeof fetch === "undefined") return;
+    fetch("api/receipts").then(function (r) {
+      if (!r.ok) throw new Error("no history");
+      return r.json();
+    }).then(function (j) {
+      // DB is source of truth when it has rows; otherwise keep the local cache.
+      if (j && Array.isArray(j.receipts) && j.receipts.length > 0) {
+        state.items = j.receipts.map(function (it, i) {
+          return {
+            id: it.id || ("db-" + i),
+            name: it.name || "upload",
+            merchant: it.merchant || "Unknown",
+            date: it.date || "—",
+            total: (typeof it.total === "number") ? it.total : null,
+            items: Array.isArray(it.items) ? it.items : [],
+            status: "valid",
+            reason: ""
+          };
+        });
+        persist(); render();
+      }
+    }).catch(function () { /* keep local cache */ });
+  }
+
+  function showTab(which) {
+    $("view-expenses").hidden = which !== "expenses";
+    $("view-ask").hidden = which !== "ask";
+    $("tab-expenses").classList.toggle("active", which === "expenses");
+    $("tab-ask").classList.toggle("active", which === "ask");
+  }
+
+  $("tab-expenses").addEventListener("click", function () { showTab("expenses"); });
+  $("tab-ask").addEventListener("click", function () { showTab("ask"); });
+
+  $("ask-btn").addEventListener("click", function () {
+    var q = $("ask-input").value.trim();
+    var box = $("ask-answer");
+    if (!q) return;
+    box.textContent = "Thinking…";
+    fetch("api/ask", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ question: q })
+    }).then(function (r) {
+      return r.json().then(function (j) { return { ok: r.ok, status: r.status, body: j }; });
+    }).then(function (x) {
+      box.textContent = x.ok ? (x.body.answer || "No answer.") : ("Error: " + (x.body.error || ("status " + x.status)));
+    }).catch(function (err) {
+      box.textContent = "Error: " + (err && err.message ? err.message : "request failed");
+    });
+  });
+
   checkBackend();
   render();
+  loadHistory();
 })();

@@ -16,6 +16,11 @@
 </header>
 
 <main class="wrap">
+  <nav class="tabs" aria-label="Views">
+    <button id="tab-expenses" class="tab active" type="button">Expenses</button>
+    <button id="tab-ask" class="tab" type="button">Ask</button>
+  </nav>
+  <div id="view-expenses">
   <section class="card" aria-labelledby="upload-h">
     <h2 id="upload-h">1. Upload receipts</h2>
     <div id="dropzone" class="dropzone" tabindex="0" role="button" aria-label="Drop receipt images or press Enter to browse">
@@ -51,13 +56,23 @@
   <section class="card" aria-labelledby="how-h">
     <h2 id="how-h">How validation works</h2>
     <ul>
-      <li>Each photo is sent to an open <strong>vision model</strong> (Llama Vision via Hugging Face), which returns merchant, date, and total as JSON.</li>
+      <li>Each photo is sent to an open <strong>vision model</strong>, which returns merchant, date, line items, and total as JSON.</li>
       <li>The backend validates that JSON before it reaches the table.</li>
       <li>A photo the model does not confirm as a receipt — e.g. a selfie — is marked <strong>invalid</strong> with a reason, and excluded from the sum.</li>
     </ul>
   </section>
+  </div>
+  <section class="card" id="view-ask" aria-labelledby="ask-h" hidden>
+    <h2 id="ask-h">Ask about your receipts</h2>
+    <p class="hint">Plain language over everything stored — e.g. “How many glasses were sold in Q1?” or “Total spent last month?”</p>
+    <textarea id="ask-input" rows="3" placeholder="Ask a question…"></textarea>
+    <div class="row">
+      <button id="ask-btn" class="btn" type="button">Ask</button>
+    </div>
+    <div id="ask-answer" class="answer" aria-live="polite"></div>
+  </section>
 </main>
 
-<footer class="site-footer"><div class="wrap"><p>Open source (MIT). OCR: Tesseract via Tesseract.js. See README for deploy &amp; monitoring.</p></div></footer>
+<footer class="site-footer"><div class="wrap"><p>Open source (MIT). Vision parsing via Ollama Cloud. Receipts stored in MongoDB. See README for deploy &amp; monitoring.</p></div></footer>
 </body>
 </html>
