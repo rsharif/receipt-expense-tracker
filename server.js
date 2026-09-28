@@ -111,7 +111,8 @@ function summarizeToolCalls(msg) {
 }
 
 /* ---------- MongoDB (Atlas M0 free tier) ---------- */
-const MONGO_URI = process.env.MONGO_URI || "";
+// Accepts MONGO_URI or MONGODB_URI — same value, either name works.
+const MONGO_URI = process.env.MONGO_URI || process.env.MONGODB_URI || "";
 let receiptsCol = null;
 
 async function connectDb() {
