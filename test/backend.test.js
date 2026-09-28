@@ -52,6 +52,20 @@ describe("validatePipeline", () => {
     assert.ok(doc >= gte && doc <= lte, "doc matches range");
   });
 
+  it("coerces item categories to the known set", () => {
+    const r = h.coerceResult({
+      is_receipt: true, merchant: "S", date: "d", total: 9, reason: "",
+      items: [
+        { label: "Burger", price: 5, category: "Food" },
+        { label: "Mystery", price: 4, category: "spaceships" },
+        { label: "Plain", price: 1 },
+      ],
+    });
+    assert.strictEqual(r.items[0].category, "food");
+    assert.strictEqual(r.items[1].category, "other");
+    assert.strictEqual(r.items[2].category, "other");
+  });
+
   it("unwraps object-wrapped and double-encoded pipelines", () => {
     const inner = '[{"$group":{"_id":null,"n":{"$sum":1}}}]';
     const wrapped = h.validatePipeline(JSON.stringify({ pipeline: inner }));

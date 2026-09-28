@@ -31,15 +31,21 @@ const LLM_MODEL =
     ? "meta-llama/Llama-3.2-11B-Vision-Instruct"
     : "Llama-4-Maverick-17B-128E-Instruct-FP8");
 
+const ITEM_CATEGORIES = [
+  "food", "drinks", "groceries", "household", "clothing",
+  "electronics", "transport", "health", "entertainment", "services", "other",
+];
+
 const PROMPT =
   "You check whether a photo shows a store receipt. " +
   "Reply with JSON only, no markdown fences, no extra text, using exactly these keys: " +
   '{"is_receipt": boolean, "merchant": string, "date": string or null, ' +
   '"total": number or null, "items": array, "reason": string}. ' +
   "total is the final amount due on the receipt. " +
-  "items lists every expense line: [{label, price}] — one entry per purchased " +
+  "items lists every expense line: [{label, price, category}] — one entry per purchased " +
   "item or service, excluding tax/tip/total/subtotal lines unless the receipt " +
   "has no other lines. " +
+  "category is exactly one of: " + ITEM_CATEGORIES.join(", ") + ". " +
   "If it is not a receipt, set is_receipt false, total null, items [], " +
   "and explain why in reason.";
 
@@ -165,12 +171,15 @@ function coerceResult(raw) {
   const total = coercePrice(o.total);
   const items = Array.isArray(o.items)
     ? o.items.slice(0, 100).map(function (it) {
+        const cat =
+          it && typeof it.category === "string" ? it.category.toLowerCase().slice(0, 20) : "other";
         return {
           label:
             it && typeof it.label === "string"
               ? it.label.slice(0, 80)
               : "Item",
           price: coercePrice(it && it.price),
+          category: ITEM_CATEGORIES.indexOf(cat) !== -1 ? cat : "other",
         };
       }).filter(function (it) { return it.price !== null; })
     : [];
@@ -343,8 +352,9 @@ app.delete("/api/receipts/:id", async function (req, res) {
 /* ---------- natural-language questions over receipts ---------- */
 const ASK_SCHEMA =
   "Collection `receipts`: {merchant: string, receiptDate: Date (may be null), " +
-  "createdAt: Date, items: [{label: string, price: number}], total: number, " +
-  "sourceFile: string}. Today is " + new Date().toISOString().slice(0, 10) + ".";
+  "createdAt: Date, items: [{label: string, price: number, category: string}], total: number, " +
+  "sourceFile: string}. Item category is one of: " + ITEM_CATEGORIES.join(", ") + ". " +
+  "Today is " + new Date().toISOString().slice(0, 10) + ".";
 
 const READ_STAGES = ["$match", "$unwind", "$group", "$sort", "$limit", "$project"];
 
@@ -473,7 +483,10 @@ app.post("/api/ask", async function (req, res) {
       [
         { role: "system", content: "Answer questions about store receipts. " + ASK_SCHEMA + " Always use query_receipts for data; never guess numbers. " +
           "Granularity: words like expense, item, purchase, or product mean a single line item — $unwind items and use items.price/items.label. " +
-          "Only aggregate the receipt total when the question says receipt, transaction, bill, or total spending." },
+          "Only aggregate the receipt total when the question says receipt, transaction, bill, or total spending. " +
+          "Categories: if the question names a category, $match items.category for that value " +
+          "(e.g. food → {'items.category': 'food'}); only fall back to a case-insensitive $regex on " +
+          "items.label if the category misses." },
         { role: "user", content: question },
       ],
       500, tools, "ask_plan"

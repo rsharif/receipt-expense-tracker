@@ -28,7 +28,10 @@ npm start
 3. Restart the server (`db connected` in the log confirms it).
 
 Every valid parse is stored in the `receipts` collection as
-`{merchant, receiptDate, createdAt, items: [{label, price}], total, sourceFile}`.
+`{merchant, receiptDate, createdAt, items: [{label, price, category}], total, sourceFile}`,
+where `category` is one of food, drinks, groceries, household, clothing,
+electronics, transport, health, entertainment, services, other. Receipts
+stored before categories existed have no category — re-upload them to fill it in.
 Without `MONGO_URI`, parsing still works but nothing persists and the
 history/Ask features report "database not configured".
 
