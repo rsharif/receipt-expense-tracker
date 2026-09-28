@@ -471,7 +471,9 @@ app.post("/api/ask", async function (req, res) {
   try {
     msg = await llmChat(
       [
-        { role: "system", content: "Answer questions about store receipts. " + ASK_SCHEMA + " Always use query_receipts for data; never guess numbers." },
+        { role: "system", content: "Answer questions about store receipts. " + ASK_SCHEMA + " Always use query_receipts for data; never guess numbers. " +
+          "Granularity: words like expense, item, purchase, or product mean a single line item — $unwind items and use items.price/items.label. " +
+          "Only aggregate the receipt total when the question says receipt, transaction, bill, or total spending." },
         { role: "user", content: question },
       ],
       500, tools, "ask_plan"
