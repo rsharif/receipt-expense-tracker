@@ -179,15 +179,15 @@
   });
 
   $("export-csv").addEventListener("click", function () {
-    var rows = [["file", "merchant", "date", "total", "status"]];
+    var rows = [["file", "merchant", "date", "total", "status", "category"]];
     state.items.forEach(function (it) {
       if (it.status === "valid" && it.items && it.items.length > 0) {
         it.items.forEach(function (line) {
-          rows.push([it.name, line.label || it.merchant, it.date, line.price.toFixed(2), "valid"]);
+          rows.push([it.name, line.label || it.merchant, it.date, line.price.toFixed(2), "valid", line.category || "other"]);
         });
-        rows.push([it.name, it.merchant + " TOTAL", it.date, it.total.toFixed(2), "valid"]);
+        rows.push([it.name, it.merchant + " TOTAL", it.date, it.total.toFixed(2), "valid", ""]);
       } else {
-        rows.push([it.name, it.merchant, it.date, it.total == null ? "" : it.total.toFixed(2), it.status]);
+        rows.push([it.name, it.merchant, it.date, it.total == null ? "" : it.total.toFixed(2), it.status, ""]);
       }
     });
     var csv = rows.map(function (r) {
@@ -237,6 +237,28 @@
   $("tab-expenses").addEventListener("click", function () { showTab("expenses"); });
   $("tab-ask").addEventListener("click", function () { showTab("ask"); });
 
+  function cellText(v) {
+    if (v === null || v === undefined) return "—";
+    var s = (typeof v === "object") ? JSON.stringify(v) : String(v);
+    return s.length > 120 ? s.slice(0, 117) + "…" : s;
+  }
+
+  function rowsTable(rows) {
+    var cols = [];
+    rows.forEach(function (r) {
+      Object.keys(r || {}).forEach(function (k) {
+        if (k !== "_id" && cols.indexOf(k) === -1 && cols.length < 6) cols.push(k);
+      });
+    });
+    if (cols.length === 0) return "";
+    return '<div class="table-wrap"><table class="ask-table"><thead><tr>' +
+      cols.map(function (c) { return "<th>" + esc(c) + "</th>"; }).join("") +
+      "</tr></thead><tbody>" +
+      rows.map(function (r) {
+        return "<tr>" + cols.map(function (c) { return "<td>" + esc(cellText(r[c])) + "</td>"; }).join("") + "</tr>";
+      }).join("") + "</tbody></table></div>";
+  }
+
   $("ask-btn").addEventListener("click", function () {
     var q = $("ask-input").value.trim();
     var box = $("ask-answer");
@@ -249,7 +271,13 @@
     }).then(function (r) {
       return r.json().then(function (j) { return { ok: r.ok, status: r.status, body: j }; });
     }).then(function (x) {
-      box.textContent = x.ok ? (x.body.answer || "No answer.") : ("Error: " + (x.body.error || ("status " + x.status)));
+      if (!x.ok) {
+        box.textContent = "Error: " + (x.body.error || ("status " + x.status));
+        return;
+      }
+      var html = "<p>" + esc(x.body.answer || "No answer.") + "</p>";
+      if (x.body.rows && x.body.rows.length > 0) html += rowsTable(x.body.rows);
+      box.innerHTML = html;
     }).catch(function (err) {
       box.textContent = "Error: " + (err && err.message ? err.message : "request failed");
     });

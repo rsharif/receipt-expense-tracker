@@ -69,8 +69,10 @@ tfoot td { border-bottom: 0; border-top: 2px solid var(--ink); }
 .tab.active { background: #123f3c; border-color: #123f3c; color: #fff; }
 .answer {
   margin-top: 12px; padding: 14px; background: var(--panel);
-  border-radius: var(--radius); min-height: 3em; white-space: pre-wrap;
+  border-radius: var(--radius); min-height: 3em;
 }
+.answer p { margin: 0 0 10px; }
+.ask-table { margin-top: 4px; background: #fff; }
 .answer:empty { display: none; }
 textarea {
   width: 100%; font-family: inherit; font-size: 15px;
