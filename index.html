@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Receipt Expense Tracker</title>
+<link rel="stylesheet" href="styles.css">
+<script src="app.js" defer></script>
+</head>
+<body>
+<header class="site-header">
+  <div class="wrap">
+    <h1>Receipt Expense Tracker</h1>
+    <p class="subtitle">Upload receipt photos. An open vision model reads them, rejects non-receipts, and totals your expenses.</p>
+  </div>
+</header>
+
+<main class="wrap">
+  <section class="card" aria-labelledby="upload-h">
+    <h2 id="upload-h">1. Upload receipts</h2>
+    <div id="dropzone" class="dropzone" tabindex="0" role="button" aria-label="Drop receipt images or press Enter to browse">
+      <p><strong>Drag &amp; drop</strong> receipt images here, or</p>
+      <label class="btn" for="file-input">Choose files</label>
+      <input id="file-input" type="file" accept="image/*,.pdf" multiple hidden>
+      <p class="hint">JPG, PNG, WebP. Multiple files OK. Photos are sent to your own backend for AI parsing.</p>
+    </div>
+    <div id="ocr-status" class="status" aria-live="polite"></div>
+  </section>
+
+  <section class="card" aria-labelledby="table-h">
+    <h2 id="table-h">2. Expenses</h2>
+    <div class="table-wrap">
+      <table id="exp-table">
+        <thead>
+          <tr><th>File</th><th>Merchant</th><th>Date</th><th class="num">Total</th><th>Status</th><th></th></tr>
+        </thead>
+        <tbody id="exp-body">
+          <tr class="empty"><td colspan="6">No receipts yet. Upload one above.</td></tr>
+        </tbody>
+        <tfoot>
+          <tr><td colspan="3"><strong>Grand total (valid receipts)</strong></td><td class="num" id="grand-total">$0.00</td><td id="valid-count">0 valid</td><td></td></tr>
+        </tfoot>
+      </table>
+    </div>
+    <div class="row">
+      <button id="export-csv" class="btn btn-ghost" type="button">Export CSV</button>
+      <button id="clear-all" class="btn btn-ghost" type="button">Clear all</button>
+    </div>
+  </section>
+
+  <section class="card" aria-labelledby="how-h">
+    <h2 id="how-h">How validation works</h2>
+    <ul>
+      <li>Each photo is sent to an open <strong>vision model</strong> (Llama Vision via Hugging Face), which returns merchant, date, and total as JSON.</li>
+      <li>The backend validates that JSON before it reaches the table.</li>
+      <li>A photo the model does not confirm as a receipt — e.g. a selfie — is marked <strong>invalid</strong> with a reason, and excluded from the sum.</li>
+    </ul>
+  </section>
+</main>
+
+<footer class="site-footer"><div class="wrap"><p>Open source (MIT). OCR: Tesseract via Tesseract.js. See README for deploy &amp; monitoring.</p></div></footer>
+</body>
+</html>
